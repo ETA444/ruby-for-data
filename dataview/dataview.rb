@@ -15,10 +15,35 @@ if package_install == 'y'
 	puts 'Installations complete!'.colorize(:light_blue)
 	puts '------------------------'
 else
-	require 'csv'
-	require 'colorize'
-	require 'rubyplot'
-	require 'descriptive_statistics'
+	# check for the installations regardless #
+	begin
+  		require 'csv'
+	rescue LoadError
+  		puts "The 'csv' gem is not installed. Please run 'gem install csv' to install it."
+  		exit
+	end
+
+	begin
+		require 'colorize'
+	rescue LoadError
+  		puts "The 'colorize' gem is not installed. Please run 'gem install colorize' to install it."
+  		exit
+	end
+
+	begin
+		require 'rubyplot'
+	rescue LoadError
+  		puts "The 'rubyplot' gem is not installed. Please run 'gem install rubyplot' to install it."
+  		exit
+	end
+
+	begin
+		require 'descriptive_statistics'
+	rescue LoadError
+  		puts "The 'descriptive_statistics' gem is not installed. Please run 'gem install descriptive_statistics' to install it."
+  		exit
+	end
+
 end
 
 # welcome dialogue and info gathering/preparation #
@@ -76,29 +101,96 @@ end
 puts "Got it!".colorize(:light_blue)
 puts "Generating visualizations ...".colorize(:light_blue)
 
-## numerical
+
+## generative functions using rubyplot and descriptive_statistics
+
+### for numerical ###
+# for numerical data some useful visualizations may be the histogram and boxplot
+# the usual descriptives are also mean-ingful :D (mean, median, etc.)
+def generate_histogram(data, column_name)
+	# creating the histogram
+	histogram = Rubyplot::Histogram.new
+ 	histogram.data column_name, data
+
+	# naming convention of files
+	histogram.write("#{column_name}-histogram-#{rand(100..999)}.png")
+end
+
+def generate_boxplot(data, column_name)
+	
+	# creating the boxplot
+	boxplot = Rubyplot::BoxPlot.new
+	boxplot.data column_name, data
+
+	# naming convention of the files
+	boxplot.write("#{column_name}-boxplot-#{rand(100..999)}.png")
+
+end
+
+def calculate_descriptive_statistics(data, column_name)
+	# descstats object
+	stats = data.descriptive_statistics
+	
+	# create the file and input the data
+	File.open("descriptivestatistics-#{column_name}.txt", 'w') do |file|
+		file.puts "Statistics for #{column_name}:"
+		stats.each { |key, value| file.puts "#{key}: #{value}" }
+	end
+end
+
+### for categorical ###
+# for categorical the above functions are not very useful
+# I create seperate visualiztion such as a bar chart
+# for the descriptives I focus on frequency and count of categories
+
+def generate_bar_chart(data, column_name)
+	# count the frequency of each category
+	category_counts = data.each_with_object(Hash.new(0)) { |value, counts| counts[value] += 1 }
+
+	# create a bar chart
+	bar_chart = Rubyplot::Bar.new
+	category_counts.each do |category, count|
+		bar_chart.data category, [count]
+	end
+
+	# naming convention of the files
+	bar_chart.write("#{column_name}-barchart-#{rand(100..999)}.png")
+end
+
+def calculate_categorical_statistics(data, column_name)
+	# count the frequency of each category
+	category_counts = data.each_with_object(Hash.new(0)) { |value, counts| counts[value] += 1 }
+
+	# create file and input the data
+	File.open("categoricalstats-#{column_name}.txt", 'w') do |file|
+		file.puts "Category counts for #{column_name}:"
+		category_counts.each { |category, count| file.puts "#{category}: #{count}" }
+	end
+end
+
+
+## logic flow: numerical vs. categorical
+## Handling the data based on either scenario
+
 if num_columns != 'none'
 	num_columns.each do |col|
-		data = csv_data[col]
-
-		# Histogram generation #
-		histogram = Rubyplot::Histogram.new(400)
-    	histogram.data data
-    	## Save visualization with following naming convention
-    	hist_fname = "#{col}-histogram-#{rand(100..999)}.png"
-    	puts "Saving histogram of the '#{col}' column, as: #{hist_fname}"
-    	histogram.write(hist_fname)
-		
-
-		# Boxplot generation #
-		# ..
-		## Save visualization with following naming convention
-  		
-
-  		# Descriptive statistics #
-  		# ..
-  		#
+		data = csv_data[col] #get the data
+		generate_histogram(data, col) #histogram per column
+		generate_boxplot(data, col) #boxplot per column
+		calculate_descriptive_statistics(data, col) # descstats per column
+  	end
 end
+
+if cat_columns != 'none'
+	num_columns.each do |col|
+		data = csv_data[col] #get the data
+		generate_histogram(data, col) #histogram per column
+		generate_boxplot(data, col) #boxplot per column
+		calculate_descriptive_statistics(data, col) # descstats per column
+  	end
+end
+
+
 
 
 
